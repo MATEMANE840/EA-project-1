@@ -479,3 +479,186 @@ if (close o p t i o n == ’ StopLoss ’ ) :
 stop loss o r d e r s += 1
 elif (close o p t i o n == ’ Ta keP rofi t ’ ) :
 take profit o r d e r s += 1
+  if closed o rde r s != 0:
+if current month >= 1 and current month <= 9:
+insert sentence = ”””
+INSERT INTO {} MONTHLY STATS (
+MONTH YEAR, OPENED ORDERS,
+CLOSED ORDERS,
+TAKE PROFIT ORDERS,
+STOP LOSS ORDERS,
+CLOSED ORDERS PERCENTAGE,
+TAKE PROFIT PERCENTAGE,
+STOP LOSS PERCENTAGE)
+VALUES(\ ’0{} {}\
+’ , {} , {} , {} ,
+{} , {} , {} , {})
+”””.format ( selected currency ,
+current month , current year
+, opened orders ,
+closed orders ,
+take profit orders ,
+stop loss orders ,
+closed orders /
+opened orders ⇤ 100,
+take profit orders/
+closed orders ⇤ 100,
+stop loss orders /
+closed orders ⇤ 100)
+elif current month >=10 and current month<= 12:
+insert sentence = ”””
+INSERT INTO {} MONTHLY STATS (
+MONTH YEAR, OPENED ORDERS,
+CLOSED ORDERS,
+TAKE PROFIT ORDERS,
+STOP LOSS ORDERS,
+CLOSED ORDERS PERCENTAGE,
+TAKE PROFIT PERCENTAGE,
+STOP LOSS PERCENTAGE)
+VALUES(\ ’{} {}\
+’ , {} , {} , {} ,
+{} , {} , {} , {})
+”””.format ( selected currency ,
+current month , current year
+, opened orders ,
+closed orders ,
+take profit orders ,
+stop loss orders ,
+ closed orders /
+opened orders ⇤ 100,
+take profit orders/
+closed orders ⇤ 100,
+stop loss orders /
+closed orders ⇤ 100)
+execute sentence (insert s e n t e n c e , db . cu r so r ( ) )
+elif closed o r d e r s == 0 :
+if current month >= 1 and current month <= 9:
+insert sentence = ”””
+INSERT INTO {} MONTHLY STATS (
+MONTH YEAR, OPENED ORDERS,
+CLOSED ORDERS,
+TAKE PROFIT ORDERS,
+STOP LOSS ORDERS,
+CLOSED ORDERS PERCENTAGE,
+TAKE PROFIT PERCENTAGE,
+STOP LOSS PERCENTAGE)
+VALUES(\ ’0{} {}\
+’ , {} , 0, 0,
+0, 0, 0, 0)
+”””.format ( selected currency ,
+current month , current year
+, opened orders )
+elif current month >= 10 and current month <= 12:
+insert sentence = ”””
+INSERT INTO {} MONTHLY STATS (
+MONTH YEAR, OPENED ORDERS,
+CLOSED ORDERS,
+TAKE PROFIT ORDERS,
+STOP LOSS ORDERS,
+CLOSED ORDERS PERCENTAGE,
+TAKE PROFIT PERCENTAGE,
+STOP LOSS PERCENTAGE)
+VALUES(\ ’{} {}\
+’ , {} , 0, 0, 0,
+0, 0, 0)
+”””.format ( selected currency ,
+current month , current year
+, opened orders )
+execute sentence (insert s e n t e n c e , db . cu r so r ( ) )
+opened orders = 0
+closed orders = 0
+ take profit orders = 0
+stop loss orders = 0
+if current mon th == 1 2:
+current month = 1
+current y e a r += 1
+else :
+current mon th += 1
+def update the balance buy ( current price , date ) :
+glo bal db , balance
+select a l l = ”SELECT ⇤ FROM {} ORDERS; ” . fo rma t (
+selected currency )
+opened orders = execute sentence ( select a l l , db . cu r so r ( ) )
+current = 0.0
+fo r row in opened orders :
+i f row [ 4 ] == ’ long ’ :
+c u r r e n t += ( c u r r e n t price ⇤ row [ 2 ] 
+row [ 1 ] ⇤ row [ 2 ] )
+e l i f row [ 4 ] == ’ sho r t ’ :
+c u r r e n t += ( row [ 1 ] ⇤ row [ 2 ] 
+current price ⇤ row [ 2 ] )
+insert balance ( balance + current , date )
+def update the balance sell ( sell order , current price ):
+glo bal db , balance
+select a l l = ”SELECT ⇤ FROM {} ORDERS; ” . fo rma t (
+selected currency )
+opened orders = execute sentence ( select a l l , db . cu r so r ( ) )
+current = 0.0
+fo r row in s ell order :
+i f row [ 7 ] == ’ long ’ :
+close time = row [ 6 ]
+bala n c e += row [ 4 ] ⇤ ( row [ 3 ] 
+row [ 2 ] )
+ e l i f row [ 7 ] == ’ sho r t ’ :
+close time = row [ 6 ]
+bala n c e += row [ 4 ] ⇤ ( row [ 2 ] 
+row [ 3 ] )
+fo r row in opened orders :
+i f row [ 4 ] == ’ long ’ :
+c u r r e n t += row [ 2 ] ⇤ (current price 
+row [ 1 ] )
+e l i f row [ 4 ] == ’ sho r t ’ :
+c u r r e n t += row [ 2 ] ⇤ ( row [ 1 ] 
+current price )
+insert balance (balance + current , close time )
+def insert balance ( price , date ) :
+glo bal db , s el e c t e d currency
+price = round ( price , 3)
+insert s e n t e n c e = ”INSERT INTO {} BALANCE (BALANCE, DATE)
+VALUES({ } , \ ’{}\ ’) ;”. format ( selected currency , price ,
+date
+)
+execute sentence (insert s e n t e n c e , db . cu r so r ( ) )
+def get liquid value () :
+glo bal db
+global end year
+global start year
+mpl . s t yl e . use ( ’ cl a s si c ’ )
+select s e n t e n c e = ”SELECT DATE, BALANCE FROM {} BALANCE; ” .
+format ( selected currency )
+data = pd . r ea d sql ( select s e n t e n c e , db , pa r s e d a t e s =[ ’DATE’ ] )
+window = i n t ( round ( data [ ’DATE’ ] . count ( ) / ( ( e n d year + 1 
+start year ) ⇤ 20) ) )
+i f window ==0:
+ window = 1
+data [ ’BALANCE’ ] = data .BALANCE. r o l l i n g ( window=window ) . mean ( )
+return data
+def get total stats () :
+glo bal db
+global selected currency
+update stats ()
+select sentence = ”””
+SELECT SUM(OPENED ORDERS) , SUM(
+CLOSED ORDERS) , SUM(TAKE PROFIT ORDERS)
+, SUM(STOP LOSS ORDERS)
+FROM {} MONTHLY STATS WHERE OPENED ORDERS
+IS NOT NULL;
+”””.format ( selected currency )
+total = execute sentence ( select s e n t e n c e , db . cu r so r ( ) )
+fo r row in to tal :
+opened = row [ 0 ]
+closed = row [ 1 ]
+take p rofi t e s = row [ 2 ]
+stop lo s s e s = row [ 3 ]
+closed percentage = closed / opened ⇤ 100
+i f ( closed != 0) :
+t p percentage = take profites / closed ⇤ 100
+s l percentage = stop losses / closed ⇤ 100
+else :
+t p percentage = 0.0
+s l percentage = 0.0
+insert s e n t e n c e = ”INSERT INTO {} MONTHLY STATS (MONTH YEAR,
+OPENED ORDERS, CLOSED ORDERS, TAKE PROFIT ORDERS, ” \
+” STOP LOSS ORDERS, CLOSED ORDERS PERCENTAGE,
+TAKE PROFIT PERCENTAGE, STOP LOSS PERCENTAGE)
+” \
