@@ -313,3 +313,169 @@ global start year , end year , historic text , currency ,
 historic title , threshold
 def init ( self , parent , controller ) :
 tk . Frame . init ( self , parent )
+ blank s pa c e0 = tk . Label ( s e l f , t e x t =””, f o n t=LARGE FONT)
+blank space0 . pack ( pady=3)
+plt . style . use ( ’ seaborn ’)
+plt . legend ( loc=’best ’ , prop={’size ’: 20})
+s e lf . fi g = Figure ( f i g s i z e =(12, 5) , dpi=100)
+self .a = self . fig . add subplot (111)
+self .a. xaxis . set major locator (mdates . YearLocator () )
+self .a. xaxis . set major f o r m a t t e r ( mdates . DateFormatter (’%Y
+%m’ ) )
+s elf . canvas = FigureCanvasTkAgg ( s elf . fig , s elf )
+self . canvas . get t k w i d g e t ( ) . pack ( s i d e=tk .BOTTOM, f i l l =tk .
+BOTH, expand=True )
+self . canvas . t k ca n va s . pack ( s i d e=tk .TOP, f i l l =tk .BOTH,
+expand=True )
+back bu t ton = t t k . Button ( s e l f , t e x t=”back ” , command=lambda
+: controller . show frame ( Historic ) )
+back button . pack ( pady=10, padx=10)
+app = Main ( )
+app . mainloop ()
+Class DBConnection
+#!/ usr/bin/python3
+import pymysql as sql
+import datetime as dt
+import ma tplo tlib as mpl
+import pandas as pd
+selected c u r r e n c y = None
+onlinehost = ’160.153.142.193 ’
+o nli n e u s e r = ’Forex DB TFG ’
+o nli n e pa s swo r d = ’UVx. P2Ps6V@L+.JL ’
+onlinedb = ’Forex DB TFG ’
+onlineport = 3306
+ balance = 0.0
+opened orders = 0
+closed orders = 0
+take profit orders = 0
+stop loss orders = 0
+current month = 1
+current year = 2001
+db = s q l . connec t ( ho s t=o nli n e h o s t , u s e r=o nli n e u s e r , password=
+o nli n e pa s swo r d , db=onlinedb , autocommit=True ,
+cha r se t =’ utf8 ’ , port=o nli n e po r t )
+end year = 2019
+start year = 2001
+mpl . rcParams . update ({ ’ figure . max open warning ’: 0})
+def execute sentence ( sentence , cursor ) :
+”””
+By c a l l i n g t h i s method , and u si ng the PyMySQL l i b r a r y , you can
+execute a sentence in the connected database .
+: param sentence : the sentence you want to execute
+: return : the results of the sentence
+”””
+try :
+if cursor . connection :
+cursor . execute ( sentence )
+return cursor . fetchall ()
+else :
+print (”impossible to connect to the database”)
+except Exception as e:
+return str (e)
+def datetime t o float (date , time ) :
+”””
+Auxiliar method used to convert a date and a time into a
+floating time value ( time value that isn ’ t tied to a
+specific time zone )
+ : param date : date of a row of the dataset . time : time of a row
+of the dataset
+: return : the datetime in floating format
+”””
+year , month , day = date . s p l i t (””)
+hour , minute , second = time . s pli t (”:”)
+date = dt . datetime ( i n t ( year ) , i n t (month ) , i n t ( day ) , i n t ( hour ) ,
+int (minute ) , int ( second ) )
+return date . timestamp ()
+def float t o datetime (float ):
+”””
+Auxiliar method used to convert a floa ti ng datetime into a
+python datetime value
+: param fl o a t : fl o a ti n g datetime value
+: return : python datetime value
+”””
+return str (dt . datetime . fromtimestamp ( float ) )
+def get dataset (currency , start y , end y):
+glo bal db
+global selected currency
+global end year
+global start year
+global current year
+reset global variables ()
+selected currency = currency
+assert selected currency not in ’none ’ , ”{} , Not a valid
+currency selected ”.format ( selected currency )
+p rin t (” S el e c t the dataset s ta r t year (min . 2001) ”)
+start year = start y
+assert ( start year >= 2001 and s ta r t year <= 2019) , ”{} , Not a
+valid start year selected ”.format ( start year )
+current year = start year
+start date = ’{}0101’.format
+( start year )
+p r i n t (” S e l e c t the d a t a s e t end yea r (max . 2019 ) ” )
+ end year = end y
+assert (end year >= 2001 and s ta r t year <= 2019) , ”{} , Not a
+valid start year selected ”.format ( start year )
+if end year != 2019:
+end date = ’{}1231’.format
+( end year )
+else :
+end date = ’{}0331’.format
+( end year )
+get dataset s e n t e n c e = ”SELECT ⇤ FROM {} WHERE DATE T BETWEEN
+\ ’{}\ ’ AND \ ’ {}\ ’”.format ( selected currency ,
+start date
+,
+end date
+)
+dataset = execute sentence (get dataset sen t en ce , db . cu r so r ( ) )
+db . cu r so r ( ) . cl o s e ( )
+return dataset
+def create database buy order (order ) :
+glo bal db
+global current month
+global opened orders
+global selected currency
+order date = float t o datetime ( order . time )
+order date = order date . s pli t (””)
+if (int (order date [ 1 ] ) != current month ) :
+update stats ()
+opened o r d e r s += 1
+insert s e n t e n c e = ”INSERT INTO {} ORDERS (ORDER ID, OPEN PRICE
+, VOLUME, OPEN DATE TIME, AGENT MODE, THRESHOLD UP,
+THRESHOLD DOWN, OPEN EVENT, TAKE PROFIT, STOP LOSS,
+LIQUIDITY , INVENTORY, CLOSED) ” \
+”VALUES ( \ ’ {}\ ’ , {} , {} , \ ’{}\ ’ , \ ’{}\ ’ , {} ,
+ {} , \ ’{}\ ’ , {} , {} , {} , {} , 0) ;”. format (
+selected currency ,
+order . order id , order . open price ,
+order . volume ,
+float t o datetime ( order . time ) ,
+order . agent mode ,
+order . threshold up ,
+order . threshold down ,
+order . event of creation ,
+order . take profit ,
+order . stop loss ,
+order . liquidity ,
+order . inventory )
+execute sentence (insert s e n t e n c e , db . cu r so r ( ) )
+p r i n t (”DATABASE: Ju s t c r e a t e d the da taba se buy o r d e r with the
+following id : { }”.format ( order . order id ))
+update the balance buy (order . open price , float t o datetime (
+order . time ) )
+def create database sell order (id , sell price , close time ,
+close event name , close option ):
+glo bal db
+global closed orders
+global take profit orders
+global stop loss orders
+global selected currency
+order date = float t o datetime (close time )
+order date = order date . s pli t (””)
+if (int (order date [ 1 ] ) != current month ) :
+update stats ()
+closed o r d e r s += 1
+if (close o p t i o n == ’ StopLoss ’ ) :
+stop loss o r d e r s += 1
+elif (close o p t i o n == ’ Ta keP rofi t ’ ) :
+take profit o r d e r s += 1
